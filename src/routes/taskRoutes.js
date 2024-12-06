@@ -20,7 +20,12 @@ try {
 
 router.get('/get-task',async(req,res)=>{
 try {
-    const tasks = await Task.find();
+    
+    const { status} = req.query;
+    const filter = {};
+    if (status) filter.status = { $regex: status, $options: 'i' };
+
+    const tasks = await Task.find(filter);
     res.json(tasks);
 } catch (error) {
     console.error(error);
