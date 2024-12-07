@@ -1,6 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const Task = require('../models/task');
+const { json } = require('body-parser');
 
 
 
@@ -20,13 +21,32 @@ try {
 
 router.get('/get-task',async(req,res)=>{
 try {
-    
-    const { status} = req.query;
-    const filter = {};
-    if (status) filter.status = { $regex: status, $options: 'i' };
 
-    const tasks = await Task.find(filter);
-    res.json(tasks);
+    const { status, priority, page = 1, maxDoc = 2} = req.query;
+    const filter = {};
+
+    if (status) filter.status = { $regex: status, $options: 'i' };
+    if (priority) filter.priority = { $regex: priority, $options: 'i' };
+
+    const pageNum = parseInt(page,10);
+    const maxNum = parseInt(maxDoc,10)
+    const skipNum = (pageNum - 1) * maxNum;
+
+    const taskCount = await Task.countDocuments(filter);
+
+    const tasks = await Task.find(filter).skip(skipNum).limit(maxDoc);;
+    const priorityOrder = ['Low', 'Medium', 'High'];
+    tasks.sort((a, b) => priorityOrder.indexOf(a.priority) - priorityOrder.indexOf(b.priority));
+
+
+    res.json({
+        paginationData:{
+        totalTasks: taskCount,
+        pageNumber: pageNum,
+        totalPages: Math.ceil(taskCount / maxNum),
+    },
+    tasks
+});
 } catch (error) {
     console.error(error);
         res.status(500).json({ error: 'Failed to fetch task' });
