@@ -13,8 +13,10 @@ connectDB();
 
 const authRoutes = require('./routes/auth');
 const taskRoutes = require('./routes/taskRoutes');
+const adminRoutes = require('./routes/admin');
 app.use('/api/auth', authRoutes);
 app.use('/api/task', taskRoutes);
+app.use('/api/admin', adminRoutes);
 
 app.get('/', (req, res) => res.send('API is running...'));
 

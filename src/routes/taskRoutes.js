@@ -2,14 +2,24 @@ const express = require('express');
 const router = express.Router();
 const Task = require('../models/task');
 const { json } = require('body-parser');
+const AuthMiddleware = require('../middleware/auth')
 
 
 
 
-router.post('/create-task', async(req,res) =>{
+router.post('/create-task',AuthMiddleware(), async(req,res) =>{
 
 try {
-    const task = new Task(req.body);
+    const { title, description, priority, status, dueDate } = req.body;
+
+        const task = new Task({
+            title,
+            description,
+            priority,
+            status,
+            dueDate,
+            userId: req.user.id,
+        });
     await task.save();
     res.status(201).json({ message: 'Task created successfully!', 
     details: task });
@@ -19,14 +29,16 @@ try {
 }
 })
 
-router.get('/get-task',async(req,res)=>{
+router.get('/get-task',AuthMiddleware(),async(req,res)=>{
 try {
 
+    
     const { status, priority, page = 1, maxDoc = 2} = req.query;
     const filter = {};
 
     if (status) filter.status = { $regex: status, $options: 'i' };
     if (priority) filter.priority = { $regex: priority, $options: 'i' };
+    filter.userId = req.user.id;
 
     const pageNum = parseInt(page,10);
     const maxNum = parseInt(maxDoc,10)
@@ -34,7 +46,7 @@ try {
 
     const taskCount = await Task.countDocuments(filter);
 
-    const tasks = await Task.find(filter).skip(skipNum).limit(maxDoc);;
+    const tasks = await Task.find(filter).skip(skipNum).limit(maxDoc);
     const priorityOrder = ['Low', 'Medium', 'High'];
     tasks.sort((a, b) => priorityOrder.indexOf(a.priority) - priorityOrder.indexOf(b.priority));
 
